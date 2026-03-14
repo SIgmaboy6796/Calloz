@@ -117,12 +117,13 @@ Make the game loop playable.
 
 ---
 
-# Phase 5 – Second Weapon (Week 5)
+# Phase 5 – Second Weapon and Lighting(Week 5)
 
 ## Add
 - Slow projectile weapon
 - Server-simulated projectile (simple position update)
 - Explosion radius damage
+- Simple lighting (low poly style)
 
 ## Still Avoid
 - Full physics engine
@@ -172,16 +173,13 @@ Only after stable multiplayer:
 
 # Definition of "Playable MVP"
 
-- 1 map
+- Atleast 1 map
 - 2 weapons
-- 4 players
+- 2 players minimum
 - Stable movement
 - Server-side hit validation
 - Respawn system
 
-Nothing more.
-
----
 
 # Risk Management
 
@@ -203,6 +201,3 @@ After MVP is stable:
 - Improve netcode (prediction + reconciliation)
 - Add cosmetic polish
 - Consider selective destructible props (state swap only)
-
-Full physics-based destruction is NOT an early milestone.
-

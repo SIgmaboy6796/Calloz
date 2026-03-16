@@ -31,9 +31,10 @@ networkClient.onState((worldState) => {
   // Update all players in the scene
   worldState.players.forEach(player => {
     if (player.id === localPlayerId) {
-      // Update local player position (for interpolation/prediction later)
+      // Update local player position and rotation
       localPlayerPosition = player.position;
       localPlayerRotation = player.rotation;
+      scene.updatePlayer(player.id, player.position, player.rotation);
     } else {
       // Update remote players
       if (scene.players.has(player.id)) {
@@ -44,7 +45,7 @@ networkClient.onState((worldState) => {
       }
     }
   });
-  
+
   // Remove players that are no longer in the world state
   scene.players.forEach((_, id) => {
     if (!worldState.players.some(p => p.id === id)) {

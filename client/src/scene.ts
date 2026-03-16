@@ -119,9 +119,14 @@ export class GameScene {
       localPlayer.position.z
     );
 
+    
     // Camera rotation follows player's rotation (server-controlled)
     this.camera.rotation.y = localPlayer.rotation.y;
-    this.camera.rotation.x = inputState?.mouseY ?? 0;
+
+    // Apply pitch (vertical look) - limit to prevent flipping
+    if (inputState) {
+      this.camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, inputState.mouseY));
+    }
   }
 
   private addOrientationObjects(): void {

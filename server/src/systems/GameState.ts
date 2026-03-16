@@ -52,6 +52,13 @@ export class GameState {
       direction.z /= magnitude;
     }
 
+    // Rotate direction by player's current rotation
+    const rad = player.rotation;
+    const rotatedX = direction.x * Math.cos(rad) - direction.z * Math.sin(rad);
+    const rotatedZ = direction.x * Math.sin(rad) + direction.z * Math.cos(rad);
+    direction.x = rotatedX;
+    direction.z = rotatedZ;
+
     // Apply movement
     player.position.x += direction.x * speed * deltaTime;
     player.position.z += direction.z * speed * deltaTime;

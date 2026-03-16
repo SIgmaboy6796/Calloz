@@ -97,19 +97,6 @@ Server → Client:
 
 ---
 
-## Phase-based Implementation Order
-
-1. **Phase 0** – Clean foundation, local WebSocket connection
-2. **Phase 1** – Authoritative movement
-3. **Phase 2** – Interpolation & stability
-4. **Phase 3** – Shooting system (hitscan)
-5. **Phase 4** – Health, death, respawn
-6. **Phase 5** – Second weapon, projectile type
-7. **Phase 6** – Scaling & deployment on Render / static hosting
-8. **Phase 7 (Optional)** – Cosmetic improvements, post-processing, map polish, limited environmental props
-
----
-
 ## Risk Management
 
 - Keep scope locked: no feature creep

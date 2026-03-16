@@ -1,49 +1,74 @@
-import * as THREE from 'three';
+import { GameScene } from './scene';
+import { InputManager } from './input';
+import { NetworkClient } from './network';
+import { InputState } from './types/game';
 
-// Basic Three.js setup - will be expanded in later phases
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+// Initialize game systems
+const scene = new GameScene();
+const inputManager = new InputManager();
+const networkClient = new NetworkClient();
 
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.getElementById('app')?.appendChild(renderer.domElement);
+// Add the renderer to the DOM
+document.getElementById('app')?.appendChild(scene.getDOMElement());
 
-camera.position.z = 5;
+// Track local player state
+let localPlayerId: string | null = null;
+let localPlayerPosition = { x: 0, y: 0, z: 0 };
+let localPlayerRotation = 0;
 
-// WebSocket connection
-const ws = new WebSocket('ws://localhost:8080');
+// Handle network events
+networkClient.onConnect((playerId) => {
+  localPlayerId = playerId;
+  console.log('Local player ID:', localPlayerId);
+  
+  // Add local player to scene
+  scene.addPlayer(localPlayerId, localPlayerPosition);
+});
 
-ws.onopen = () => {
-  console.log('WebSocket connection established');
-  // Send a test message to the server
-  ws.send(JSON.stringify({ type: 'test', message: 'Hello from client!' }));
-};
+networkClient.onState((worldState) => {
+  // Update all players in the scene
+  worldState.players.forEach(player => {
+    if (player.id === localPlayerId) {
+      // Update local player position (for interpolation/prediction later)
+      localPlayerPosition = player.position;
+      localPlayerRotation = player.rotation;
+    } else {
+      // Update remote players
+      if (scene.players.has(player.id)) {
+        scene.updatePlayer(player.id, player.position, player.rotation);
+      } else {
+        // Add new remote player
+        scene.addPlayer(player.id, player.position);
+      }
+    }
+  });
+  
+  // Remove players that are no longer in the world state
+  scene.players.forEach((_, id) => {
+    if (!worldState.players.some(p => p.id === id)) {
+      scene.removePlayer(id);
+    }
+  });
+});
 
-ws.onmessage = (event) => {
-  console.log('Received from server:', event.data);
-  const data = JSON.parse(event.data);
-  // Handle different message types
-  if (data.type === 'welcome') {
-    console.log('Welcome message from server:', data.message);
-  } else if (data.type === 'echo') {
-    console.log('Echo from server:', data.data);
-  }
-};
+networkClient.onError((error) => {
+  console.error('Network error:', error);
+});
 
-ws.onclose = () => {
-  console.log('WebSocket connection closed');
-};
+// Handle input
+inputManager.registerCallback((inputState: InputState) => {
+  // Send input to server
+  networkClient.sendInput(inputState);
+});
 
-ws.onerror = (error) => {
-  console.error('WebSocket error:', error);
-};
-
-// Simple animation loop
+// Animation loop
 function animate() {
   requestAnimationFrame(animate);
-  renderer.render(scene, camera);
+  
+  // Update scene
+  scene.update();
 }
 
 animate();
 
-console.log('3D Web FPS Client initialized');
+console.log('3D Web FPS Client initialized with authoritative movement');

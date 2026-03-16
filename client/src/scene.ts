@@ -7,6 +7,7 @@ export class GameScene {
   private renderer: THREE.WebGLRenderer;
   private plane: THREE.Mesh;
   public players: Map<string, THREE.Mesh> = new Map();
+  private localPlayerId: string | null = null;
 
   constructor() {
     this.scene = new THREE.Scene();
@@ -18,8 +19,8 @@ export class GameScene {
       0.1,
       1000
     );
-    this.camera.position.set(0, 10, 20);
-    this.camera.lookAt(0, 0, 0);
+    // Initial camera position (will be updated to follow player)
+    this.camera.position.set(0, 1.6, 0); // Eye level for first-person
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -36,6 +37,9 @@ export class GameScene {
     this.plane.rotation.x = -Math.PI / 2;
     this.plane.receiveShadow = true;
     this.scene.add(this.plane);
+
+    // Add orientation objects
+    this.addOrientationObjects();
 
     // Add lighting
     const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
@@ -56,14 +60,29 @@ export class GameScene {
     });
   }
 
+  setLocalPlayer(id: string): void {
+    this.localPlayerId = id;
+  }
+
   addPlayer(id: string, position: Vector3): void {
-    const geometry = new THREE.BoxGeometry(1, 2, 1);
+    const geometry = new THREE.BoxGeometry(0.8, 3.5, 0.8);
+    // Translate geometry so bottom is at origin (position will be at feet)
+    geometry.translate(0, 1.75, 0);
     const material = new THREE.MeshStandardMaterial({ color: this.getPlayerColor(id) });
     const player = new THREE.Mesh(geometry, material);
     player.position.set(position.x, position.y, position.z);
     player.castShadow = true;
+    // Hide local player mesh to avoid seeing own body in first-person
+    if (id === this.localPlayerId) {
+      player.visible = false;
+    }
     this.scene.add(player);
     this.players.set(id, player);
+
+    // If this is the local player, update camera immediately
+    if (id === this.localPlayerId) {
+      this.updateCamera();
+    }
   }
 
   updatePlayer(id: string, position: Vector3, rotation: number): void {
@@ -71,6 +90,11 @@ export class GameScene {
     if (player) {
       player.position.set(position.x, position.y, position.z);
       player.rotation.y = rotation;
+
+      // If this is the local player, update camera to follow
+      if (id === this.localPlayerId) {
+        this.updateCamera();
+      }
     }
   }
 
@@ -82,7 +106,82 @@ export class GameScene {
     }
   }
 
-  update(): void {
+  private updateCamera(inputState?: { mouseX: number; mouseY: number }): void {
+    if (!this.localPlayerId) return;
+
+    const localPlayer = this.players.get(this.localPlayerId);
+    if (!localPlayer) return;
+
+    // First-person camera: position at player's eye level
+    this.camera.position.set(
+      localPlayer.position.x,
+      localPlayer.position.y + 3.2, // Eye level (player height is 3.5, bottom at y=0, eyes at ~3.2)
+      localPlayer.position.z
+    );
+
+    // Camera rotation follows player's rotation (server-controlled)
+    this.camera.rotation.y = localPlayer.rotation.y;
+    this.camera.rotation.x = inputState?.mouseY ?? 0;
+  }
+
+  private addOrientationObjects(): void {
+    // Add trees
+    const treePositions = [
+      { x: 10, z: 10 }, { x: -15, z: 5 }, { x: 20, z: -10 },
+      { x: -5, z: -20 }, { x: 12, z: 15 }, { x: -18, z: -8 }
+    ];
+
+    treePositions.forEach(pos => {
+      // Tree trunk (brown cylinder)
+      const trunkGeometry = new THREE.CylinderGeometry(0.3, 0.5, 3, 8);
+      const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+      const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+      trunk.position.set(pos.x, 1.5, pos.z);
+      trunk.castShadow = true;
+      this.scene.add(trunk);
+
+      // Tree foliage (green cone)
+      const foliageGeometry = new THREE.ConeGeometry(1.5, 2, 8);
+      const foliageMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
+      const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
+      foliage.position.set(pos.x, 3.5, pos.z);
+      foliage.castShadow = true;
+      this.scene.add(foliage);
+    });
+
+    // Add rocks
+    const rockPositions = [
+      { x: -10, z: 15 }, { x: 25, z: 5 }, { x: -20, z: -15 }
+    ];
+
+    rockPositions.forEach(pos => {
+      const rockGeometry = new THREE.DodecahedronGeometry(1.5);
+      const rockMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
+      const rock = new THREE.Mesh(rockGeometry, rockMaterial);
+      rock.position.set(pos.x, 0.75, pos.z);
+      rock.castShadow = true;
+      this.scene.add(rock);
+    });
+
+    // Add monoliths (orientation markers)
+    const monolithPositions = [
+      { x: 30, z: 30, color: 0xFF0000 }, { x: -30, z: -30, color: 0x0000FF },
+      { x: 30, z: -30, color: 0xFFFF00 }, { x: -30, z: 30, color: 0xFF00FF }
+    ];
+
+    monolithPositions.forEach(pos => {
+      const monolithGeometry = new THREE.BoxGeometry(2, 8, 2);
+      const monolithMaterial = new THREE.MeshStandardMaterial({ color: pos.color });
+      const monolith = new THREE.Mesh(monolithGeometry, monolithMaterial);
+      monolith.position.set(pos.x, 4, pos.z);
+      monolith.castShadow = true;
+      this.scene.add(monolith);
+    });
+  }
+
+  update(inputState?: { mouseX: number; mouseY: number }): void {
+    // Always update camera to follow local player in first-person
+    this.updateCamera(inputState);
     this.renderer.render(this.scene, this.camera);
   }
 

@@ -14,7 +14,6 @@ export class TickLoop {
     this.lastTickTime = Date.now();
     this.tickInterval = setInterval(() => {
       const now = Date.now();
-      const deltaTime = (now - this.lastTickTime) / 1000; // Convert to seconds
       this.lastTickTime = now;
 
       // Call all registered callbacks

@@ -20,6 +20,8 @@ let localPlayerRotation = 0;
 networkClient.onConnect((playerId) => {
   localPlayerId = playerId;
   console.log('Local player ID:', localPlayerId);
+    // Set local player on scene for first-person camera
+  scene.setLocalPlayer(localPlayerId);
   
   // Add local player to scene
   scene.addPlayer(localPlayerId, localPlayerPosition);
@@ -65,8 +67,11 @@ inputManager.registerCallback((inputState: InputState) => {
 function animate() {
   requestAnimationFrame(animate);
   
-  // Update scene
-  scene.update();
+  // Get current input state
+  const inputState = inputManager.getInputState();
+  
+  // Update scene with input for camera rotation
+  scene.update(inputState);
 }
 
 animate();

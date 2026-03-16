@@ -20,6 +20,8 @@ export interface InputState {
   right: boolean;
   jump: boolean;
   sequence?: number; // Optional for future use
+  mouseX: number;
+  mouseY: number;
 }
 
 export interface WorldState {

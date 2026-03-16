@@ -34,6 +34,8 @@ export class GameState {
 
     // Movement speed in units per second
     const speed = 5;
+    // Rotation speed in radians per second
+    const rotationSpeed = 3;
 
     // Calculate movement direction based on input
     let direction = { x: 0, y: 0, z: 0 };
@@ -53,6 +55,9 @@ export class GameState {
     // Apply movement
     player.position.x += direction.x * speed * deltaTime;
     player.position.z += direction.z * speed * deltaTime;
+
+    // Apply rotation from mouse input
+    player.rotation += input.mouseX * rotationSpeed * deltaTime;
 
     // Keep player on the plane (y=0)
     player.position.y = 0;

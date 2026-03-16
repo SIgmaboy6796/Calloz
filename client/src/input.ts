@@ -6,9 +6,13 @@ export class InputManager {
     backward: false,
     left: false,
     right: false,
-    jump: false
+    jump: false,
+    mouseX: 0,
+    mouseY: 0
   };
   private callbacks: Array<(input: InputState) => void> = [];
+  private isPointerLocked = false;
+  private mouseSensitivity = 0.002;
 
   constructor() {
     this.setupEventListeners();
@@ -19,12 +23,35 @@ export class InputManager {
     window.addEventListener('keydown', (e) => this.handleKeyDown(e));
     window.addEventListener('keyup', (e) => this.handleKeyUp(e));
 
+    // Mouse events
+    window.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+
+    // Pointer lock events
+    document.addEventListener('click', () => {
+      const canvas = document.querySelector('canvas');
+      if (canvas) {
+        canvas.requestPointerLock();
+      }
+    });
+
+    document.addEventListener('pointerlockchange', () => {
+      this.isPointerLocked = document.pointerLockElement === document.body;
+    });
+
     // Prevent default behavior for game keys
     window.addEventListener('keydown', (e) => {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
         e.preventDefault();
       }
     });
+  }
+
+  private handleMouseMove(e: MouseEvent): void {
+    if (!this.isPointerLocked) return;
+
+    this.inputState.mouseX += e.movementX * this.mouseSensitivity;
+    this.inputState.mouseY += e.movementY * this.mouseSensitivity;
+    this.notifyCallbacks();
   }
 
   private handleKeyDown(e: KeyboardEvent): void {
